@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物品分類大冒險 Categorization Game</title>
+    <!-- html2canvas for exporting report as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- canvas-confetti for celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #2ECC71;
+            --accent: #E74C3C;
+            --bg: #E0F2FE;
+            --text: #0F172A;
+        }
+
+        body {
+            font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        h1 { color: var(--primary); margin: 5px 0 15px 0; }
+
+        /* Modals & Setup */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .cat-btn {
+            padding: 10px 5px;
+            background: #F1F5F9;
+            border: 2px solid #CBD5E1;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .cat-btn.selected {
+            background: var(--primary);
+            color: white;
+            border-color: #2563EB;
+        }
+
+        .btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover { background: #27AE60; }
+
+        /* Game UI Layout */
+        #game-area {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #status-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Conveyor Belt */
+        #conveyor-belt-container {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: #94A3B8;
+            border-radius: 15px;
+            border: 4px solid #475569;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        .belt-track {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30px;
+            background: repeating-linear-gradient(90deg, #334155 0, #334155 20px, #1E293B 20px, #1E293B 40px);
+            animation: moveBelt 2s linear infinite;
+        }
+
+        @keyframes moveBelt {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+
+        /* Draggable Object */
+        #draggable-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 15px;
+            border: 3px solid var(--primary);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            z-index: 10;
+            touch-action: none;
+        }
+
+        #draggable-item img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Category Boxes Container */
+        #boxes-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            gap: 15px;
+        }
+
+        .box {
+            flex: 1;
+            height: 150px;
+            background: white;
+            border: 3px dashed var(--primary);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            transition: all 0.2s;
+            position: relative;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        /* Box Category Visual Image */
+        .box-cat-img {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+            margin-bottom: 6px;
+            pointer-events: none;
+        }
+
+        .box.drag-over {
+            background: #E0F2FE;
+            border-color: var(--secondary);
+            transform: scale(1.03);
+        }
+
+        /* Feedback Overlay */
+        .feedback-pop {
+            position: absolute;
+            font-size: 3.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            animation: popFade 0.8s forwards;
+            z-index: 50;
+        }
+
+        .feedback-pop.correct { color: var(--secondary); }
+        .feedback-pop.incorrect { color: var(--accent); }
+
+        @keyframes popFade {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+
+        /* Data Tracker Panel */
+        #tracker-panel {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            border-radius: 15px;
+            padding: 15px 20px;
+            box-sizing: border-box;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 2px solid #CBD5E1;
+        }
+
+        .tracker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #E2E8F0;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tracker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .tracker-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .tracker-info { display: flex; align-items: center; gap: 10px; }
+        .tracker-thumb { width: 30px; height: 30px; object-fit: contain; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>物品分類大冒險</h1>
+
+    <!-- Pre-selection Modal -->
+    <div id="start-modal" class="modal">
+        <div class="modal-content">
+            <h2>選擇目標類別</h2>
+            <p>請選擇 1 至 3 個類別進行遊戲：</p>
+            <div class="category-grid" id="category-options"></div>
+            <button class="btn" onclick="startGame()">開始遊戲 Start</button>
+        </div>
+    </div>
+
+    <!-- Game Interface -->
+    <div id="game-area" class="hidden">
+        <div id="status-bar">
+            <span>進度 Trial: <span id="current-trial">1</span> / 15</span>
+            <span>得分 Score: <span id="score">0</span></span>
+        </div>
+
+        <div id="conveyor-belt-container">
+            <div id="draggable-item" draggable="true">
+                <img id="item-img" src="" alt="Target Item">
+            </div>
+            <div class="belt-track"></div>
+        </div>
+
+        <div id="boxes-container"></div>
+    </div>
+
+    <!-- Data Tracker -->
+    <div id="tracker-panel" class="hidden">
+        <div class="tracker-header">
+            <h3 style="margin: 0; color: var(--primary);">表現紀錄 (Data Tracker)</h3>
+            <button class="btn" style="padding: 5px 15px; font-size: 0.9rem;" onclick="exportTrackerImage()">📷 匯出紀錄圖片</button>
+        </div>
+        <div class="tracker-list" id="tracker-list"></div>
+        <div id="summary-box" style="margin-top: 10px; font-weight: bold; text-align: right; color: var(--primary);">
+            首答正確率: 0%
+        </div>
+    </div>
+
+    <script>
+        // Box Icon/Image Mapping (Specify image files for each category box)
+        const categoryBoxImages = {
+            '動物': 'cat_animal.png',
+            '食物': 'cat_food.png',
+            '玩具': 'cat_toy.png',
+            '餐具': 'cat_tableware.png',
+            '衣服': 'cat_clothes.png',
+            '飲品': 'cat_drinks.png',
+            '昆蟲': 'cat_insects.png',
+            '水果': 'cat_fruits.png',
+            '交通工具': 'cat_vehicles.png',
+            '零食': 'cat_snacks.png',
+            '電器': 'cat_appliances.png',
+            '文具': 'cat_stationery.png',
+            '海洋生物': 'cat_sea.png',
+            '心情': 'cat_feelings.png',
+            '天氣': 'cat_weather.png',
+            '運動': 'cat_sports.png',
+            '其他 (Others)': 'cat_others.png'
+        };
+
+        // Items Database (Sequential URLs 1.png to 128.png)
+        const categoriesData = {
+            '動物': Array.from({length: 8}, (_, i) => ({ id: i+1, name: '動物', img: `${i+1}.png` })),
+            '食物': Array.from({length: 8}, (_, i) => ({ id: i+9, name: '食物', img: `${i+9}.png` })),
+            '玩具': Array.from({length: 8}, (_, i) => ({ id: i+17, name: '玩具', img: `${i+17}.png` })),
+            '餐具': Array.from({length: 8}, (_, i) => ({ id: i+25, name: '餐具', img: `${i+25}.png` })),
+            '衣服': Array.from({length: 8}, (_, i) => ({ id: i+33, name: '衣服', img: `${i+33}.png` })),
+            '飲品': Array.from({length: 8}, (_, i) => ({ id: i+41, name: '飲品', img: `${i+41}.png` })),
+            '昆蟲': Array.from({length: 8}, (_, i) => ({ id: i+49, name: '昆蟲', img: `${i+49}.png` })),
+            '水果': Array.from({length: 8}, (_, i) => ({ id: i+57, name: '水果', img: `${i+57}.png` })),
+            '交通工具': Array.from({length: 8}, (_, i) => ({ id: i+65, name: '交通工具', img: `${i+65}.png` })),
+            '零食': Array.from({length: 8}, (_, i) => ({ id: i+73, name: '零食', img: `${i+73}.png` })),
+            '電器': Array.from({length: 8}, (_, i) => ({ id: i+81, name: '電器', img: `${i+81}.png` })),
+            '文具': Array.from({length: 8}, (_, i) => ({ id: i+89, name: '文具', img: `${i+89}.png` })),
+            '海洋生物': Array.from({length: 8}, (_, i) => ({ id: i+97, name: '海洋生物', img: `${i+97}.png` })),
+            '心情': Array.from({length: 8}, (_, i) => ({ id: i+105, name: '心情', img: `${i+105}.png` })),
+            '天氣': Array.from({length: 8}, (_, i) => ({ id: i+113, name: '天氣', img: `${i+113}.png` })),
+            '運動': Array.from({length: 8}, (_, i) => ({ id: i+121, name: '運動', img: `${i+121}.png` }))
+        };
+
+        const conflictGroups = [
+            ['食物', '水果', '零食'],
+            ['昆蟲', '動物', '海洋生物']
+        ];
+
+        let selectedCategories = [];
+        let trialsList = [];
+        let currentTrialIndex = 0;
+        let score = 0;
+        let trackerData = [];
+        let currentFirstTryCorrect = true;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(130, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            }
+        }
+
+        const catOptionsContainer = document.getElementById('category-options');
+        Object.keys(categoriesData).forEach(cat => {
+            const btn = document.createElement('div');
+            btn.className = 'cat-btn';
+            btn.innerText = cat;
+            btn.onclick = () => toggleCategory(cat, btn);
+            catOptionsContainer.appendChild(btn);
+        });
+
+        function toggleCategory(cat, btn) {
+            if (selectedCategories.includes(cat)) {
+                selectedCategories = selectedCategories.filter(c => c !== cat);
+                btn.classList.remove('selected');
+            } else {
+                if (selectedCategories.length >= 3) {
+                    alert('最多只能選擇 3 個類別！');
+                    return;
+                }
+                selectedCategories.push(cat);
+                btn.classList.add('selected');
+            }
+        }
+
+        function shuffle(array) { return array.slice().sort(() => Math.random() - 0.5); }
+
+        function startGame() {
+            if (selectedCategories.length === 0) {
+                alert('請先選擇至少 1 個類別！');
+                return;
+            }
+
+            for (let group of conflictGroups) {
+                const intersect = selectedCategories.filter(c => group.includes(c));
+                if (intersect.length > 1) {
+                    alert(`同一次遊戲中不能同時選擇：${intersect.join('、')}！`);
+                    return;
+                }
+            }
+
+            document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('game-area').classList.remove('hidden');
+            document.getElementById('tracker-panel').classList.remove('hidden');
+
+            setupBoxes();
+            generateTrials();
+
+            currentTrialIndex = 0;
+            score = 0;
+            trackerData = [];
+            document.getElementById('score').innerText = score;
+            loadTrial();
+        }
+
+        /* Set up Box Visual Images & Text */
+        function setupBoxes() {
+            const container = document.getElementById('boxes-container');
+            container.innerHTML = '';
+
+            let boxCategories = [...selectedCategories];
+            if (selectedCategories.length === 1) {
+                boxCategories.push('其他 (Others)');
+            }
+
+            boxCategories.forEach(catName => {
+                const box = document.createElement('div');
+                box.className = 'box';
+                box.dataset.category = catName;
+
+                // 1. Box Visual Category Image
+                const catImg = document.createElement('img');
+                catImg.className = 'box-cat-img';
+                catImg.src = categoryBoxImages[catName] || 'cat_others.png';
+                catImg.alt = catName;
+
+                // 2. Box Text Label
+                const label = document.createElement('span');
+                label.innerText = catName;
+
+                box.appendChild(catImg);
+                box.appendChild(label);
+
+                // Drag and Drop Listeners
+                box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('drag-over'); });
+                box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
+                box.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    box.classList.remove('drag-over');
+                    handleDrop(catName, box);
+                });
+
+                container.appendChild(box);
+            });
+        }
+
+        function generateTrials() {
+            trialsList = [];
+            let excludedCategories = new Set();
+            selectedCategories.forEach(cat => {
+                conflictGroups.forEach(group => {
+                    if (group.includes(cat)) {
+                        group.forEach(item => excludedCategories.add(item));
+                    }
+                });
+            });
+
+            if (selectedCategories.length === 1) {
+                const targetCat = selectedCategories[0];
+                const targetItems = shuffle(categoriesData[targetCat]).slice(0, 8).map(i => ({ ...i, correctBox: targetCat }));
+                
+                let distractorPool = [];
+                Object.keys(categoriesData).forEach(cat => {
+                    if (cat !== targetCat && !excludedCategories.has(cat)) {
+                        distractorPool = distractorPool.concat(categoriesData[cat]);
+                    }
+                });
+                const distractorItems = shuffle(distractorPool).slice(0, 7).map(i => ({ ...i, correctBox: '其他 (Others)' }));
+                
+                trialsList = shuffle([...targetItems, ...distractorItems]);
+
+            } else {
+                let pool = [];
+                selectedCategories.forEach(cat => {
+                    const items = categoriesData[cat].map(i => ({ ...i, correctBox: cat }));
+                    pool = pool.concat(items);
+                });
+                trialsList = shuffle(pool).slice(0, 15);
+            }
+        }
+
+        function loadTrial() {
+            if (currentTrialIndex >= trialsList.length) {
+                endGame();
+                return;
+            }
+
+            currentFirstTryCorrect = true;
+            const currentItem = trialsList[currentTrialIndex];
+            document.getElementById('current-trial').innerText = currentTrialIndex + 1;
+            
+            const dragItem = document.getElementById('draggable-item');
+            const imgEl = document.getElementById('item-img');
+            
+            imgEl.src = currentItem.img;
+            dragItem.style.visibility = 'visible';
+            dragItem.style.transform = 'none';
+        }
+
+        function handleDrop(droppedCategory, boxElement) {
+            const currentItem = trialsList[currentTrialIndex];
+            const isCorrect = (droppedCategory === currentItem.correctBox);
+
+            if (isCorrect) {
+                playSound('correct');
+                showFeedback('✓', 'correct', boxElement);
+                
+                if (currentFirstTryCorrect) score += 10;
+                document.getElementById('score').innerText = score;
+
+                trackerData.push({
+                    trial: currentTrialIndex + 1,
+                    img: currentItem.img,
+                    targetCat: currentItem.correctBox,
+                    result: currentFirstTryCorrect ? '正確 (Correct)' : '重試後正確 (Correct on retry)'
+                });
+                updateTrackerUI();
+
+                document.getElementById('draggable-item').style.visibility = 'hidden';
+                
+                currentTrialIndex++;
+                setTimeout(loadTrial, 800);
+
+            } else {
+                playSound('incorrect');
+                showFeedback('✗', 'incorrect', boxElement);
+                currentFirstTryCorrect = false;
+
+                const dragItem = document.getElementById('draggable-item');
+                dragItem.style.transform = 'scale(1.1)';
+                setTimeout(() => dragItem.style.transform = 'none', 300);
+            }
+        }
+
+        function showFeedback(text, type, targetEl) {
+            const pop = document.createElement('div');
+            pop.className = `feedback-pop ${type}`;
+            pop.innerText = text;
+            targetEl.appendChild(pop);
+            setTimeout(() => pop.remove(), 800);
+        }
+
+        function updateTrackerUI() {
+            const list = document.getElementById('tracker-list');
+            list.innerHTML = '';
+            let correctFirstTryCount = 0;
+
+            trackerData.forEach(data => {
+                if (data.result === '正確 (Correct)') correctFirstTryCount++;
+
+                const item = document.createElement('div');
+                item.className = 'tracker-item';
+                item.innerHTML = `
+                    <div class="tracker-info">
+                        <b>#${data.trial}</b>
+                        <img src="${data.img}" class="tracker-thumb" alt="item">
+                        <span>類別: ${data.targetCat}</span>
+                    </div>
+                    <span style="color: ${data.result.includes('重試') ? '#E67E22' : 'var(--secondary)'}; font-weight: bold;">
+                        ${data.result}
+                    </span>
+                `;
+                list.appendChild(item);
+            });
+
+            const accuracy = trackerData.length ? Math.round((correctFirstTryCount / trackerData.length) * 100) : 0;
+            document.getElementById('summary-box').innerText = `首答正確率 (First-try Accuracy): ${accuracy}%`;
+        }
+
+        function endGame() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 150,
+                    spread: 90,
+                    origin: { y: 0.6 }
+                });
+            }
+            alert(`🎉 恭喜完成遊戲！你的最終得分是 ${score} 分！`);
+        }
+
+        function exportTrackerImage() {
+            const panel = document.getElementById('tracker-panel');
+            html2canvas(panel).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'categorization_performance_report.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
