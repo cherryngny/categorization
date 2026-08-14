@@ -171,7 +171,7 @@
         /* Category Boxes Container */
         #boxes-container {
             display: flex;
-            justify-content: space-around;
+            justify-style: space-around;
             width: 100%;
             gap: 15px;
         }
@@ -401,7 +401,7 @@
             '餐具': '132.png',
             '衣服': '133.png',
             '飲品': '134.png',
-            '昆蟲': '135.png',
+            '昆蟲': '145.png',
             '水果': '136.png',
             '交通工具': '137.png',
             '零食': '138.png',
@@ -572,25 +572,40 @@
                 });
             });
 
+            // If '動物' is chosen as a target, filter out ambiguous '23.png' across the entire trial generation
+            const hasAnimalsSelected = selectedCategories.includes('動物');
+
             if (selectedCategories.length === 1) {
                 const targetCat = selectedCategories[0];
-                const targetItems = shuffle(categoriesData[targetCat]).slice(0, 8).map(i => ({ ...i, correctBox: targetCat }));
+                let targetItems = categoriesData[targetCat];
+                if (hasAnimalsSelected) {
+                    targetItems = targetItems.filter(i => i.img !== '23.png');
+                }
+                const selectedTargetItems = shuffle(targetItems).slice(0, 8).map(i => ({ ...i, correctBox: targetCat }));
                 
                 let distractorPool = [];
                 Object.keys(categoriesData).forEach(cat => {
                     if (cat !== targetCat && !excludedCategories.has(cat)) {
-                        distractorPool = distractorPool.concat(categoriesData[cat]);
+                        let items = categoriesData[cat];
+                        if (hasAnimalsSelected) {
+                            items = items.filter(i => i.img !== '23.png');
+                        }
+                        distractorPool = distractorPool.concat(items);
                     }
                 });
                 const distractorItems = shuffle(distractorPool).slice(0, 7).map(i => ({ ...i, correctBox: '其他 (Others)' }));
                 
-                trialsList = shuffle([...targetItems, ...distractorItems]);
+                trialsList = shuffle([...selectedTargetItems, ...distractorItems]);
 
             } else {
                 let pool = [];
                 selectedCategories.forEach(cat => {
-                    const items = categoriesData[cat].map(i => ({ ...i, correctBox: cat }));
-                    pool = pool.concat(items);
+                    let items = categoriesData[cat];
+                    if (hasAnimalsSelected) {
+                        items = items.filter(i => i.img !== '23.png');
+                    }
+                    const mappedItems = items.map(i => ({ ...i, correctBox: cat }));
+                    pool = pool.concat(mappedItems);
                 });
                 trialsList = shuffle(pool).slice(0, 15);
             }
