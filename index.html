@@ -44,8 +44,10 @@
             background: white;
             padding: 25px;
             border-radius: 20px;
-            max-width: 500px;
+            max-width: 650px;
             width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             text-align: center;
         }
@@ -192,7 +194,6 @@
             box-sizing: border-box;
         }
 
-        /* Box Category Visual Image */
         .box-cat-img {
             width: 55px;
             height: 55px;
@@ -225,6 +226,70 @@
             50% { opacity: 1; transform: scale(1.2); }
             100% { opacity: 0; transform: scale(1); }
         }
+
+        /* Summary Image Gallery UI */
+        .summary-category-group {
+            background: #F8FAFC;
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .summary-cat-title {
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-cat-title img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .summary-items-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .summary-item-card {
+            background: white;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #CBD5E1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+
+        .summary-item-card img {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+            margin-bottom: 6px;
+        }
+
+        .summary-item-status {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 6px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .status-perfect { background: #DCFCE7; color: #166534; }
+        .status-retry { background: #FFEDD5; color: #9A3412; }
+        .status-unseen { background: #F1F5F9; color: #64748B; }
 
         /* Data Tracker Panel */
         #tracker-panel {
@@ -286,6 +351,18 @@
         </div>
     </div>
 
+    <!-- Picture Summary Modal -->
+    <div id="summary-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 style="color: var(--primary); margin-top: 0;">🎉 本輪目標類別圖片總結</h2>
+            <p id="summary-score-text" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 15px;"></p>
+            
+            <div id="summary-categories-container"></div>
+
+            <button class="btn" onclick="restartGame()">再玩一次 Play Again</button>
+        </div>
+    </div>
+
     <!-- Game Interface -->
     <div id="game-area" class="hidden">
         <div id="status-bar">
@@ -316,28 +393,26 @@
     </div>
 
     <script>
-        // Box Icon/Image Mapping (Specify image files for each category box)
         const categoryBoxImages = {
-            '動物': '129.png',
-            '食物': '130.png',
-            '玩具': '131.png',
-            '餐具': '132.png',
-            '衣服': '133.png',
-            '飲品': '134.png',
-            '昆蟲': '135.png',
-            '水果': '136.png',
-            '交通工具': '137.png',
-            '零食': '138.png',
-            '電器': '139.png',
-            '文具': '140.png',
-            '海洋生物': '141.png',
-            '心情': '142.png',
-            '天氣': '143.png',
-            '運動': '144.png',
-            '其他 (Others)': 'category.png'
+            '動物': 'cat_animal.png',
+            '食物': 'cat_food.png',
+            '玩具': 'cat_toy.png',
+            '餐具': 'cat_tableware.png',
+            '衣服': 'cat_clothes.png',
+            '飲品': 'cat_drinks.png',
+            '昆蟲': 'cat_insects.png',
+            '水果': 'cat_fruits.png',
+            '交通工具': 'cat_vehicles.png',
+            '零食': 'cat_snacks.png',
+            '電器': 'cat_appliances.png',
+            '文具': 'cat_stationery.png',
+            '海洋生物': 'cat_sea.png',
+            '心情': 'cat_feelings.png',
+            '天氣': 'cat_weather.png',
+            '運動': 'cat_sports.png',
+            '其他 (Others)': 'cat_others.png'
         };
 
-        // Items Database (Sequential URLs 1.png to 128.png)
         const categoriesData = {
             '動物': Array.from({length: 8}, (_, i) => ({ id: i+1, name: '動物', img: `${i+1}.png` })),
             '食物': Array.from({length: 8}, (_, i) => ({ id: i+9, name: '食物', img: `${i+9}.png` })),
@@ -434,6 +509,7 @@
             }
 
             document.getElementById('start-modal').classList.add('hidden');
+            document.getElementById('summary-modal').classList.add('hidden');
             document.getElementById('game-area').classList.remove('hidden');
             document.getElementById('tracker-panel').classList.remove('hidden');
 
@@ -447,7 +523,6 @@
             loadTrial();
         }
 
-        /* Set up Box Visual Images & Text */
         function setupBoxes() {
             const container = document.getElementById('boxes-container');
             container.innerHTML = '';
@@ -462,20 +537,17 @@
                 box.className = 'box';
                 box.dataset.category = catName;
 
-                // 1. Box Visual Category Image
                 const catImg = document.createElement('img');
                 catImg.className = 'box-cat-img';
                 catImg.src = categoryBoxImages[catName] || 'cat_others.png';
                 catImg.alt = catName;
 
-                // 2. Box Text Label
                 const label = document.createElement('span');
                 label.innerText = catName;
 
                 box.appendChild(catImg);
                 box.appendChild(label);
 
-                // Drag and Drop Listeners
                 box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('drag-over'); });
                 box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
                 box.addEventListener('drop', (e) => {
@@ -536,9 +608,10 @@
             const dragItem = document.getElementById('draggable-item');
             const imgEl = document.getElementById('item-img');
             
+            // Fix: Update image source BEFORE revealing item card
             imgEl.src = currentItem.img;
-            dragItem.style.visibility = 'visible';
             dragItem.style.transform = 'none';
+            dragItem.style.visibility = 'visible';
         }
 
         function handleDrop(droppedCategory, boxElement) {
@@ -549,6 +622,9 @@
                 playSound('correct');
                 showFeedback('✓', 'correct', boxElement);
                 
+                // Fix: Hide draggable item IMMEDIATELY upon drop
+                document.getElementById('draggable-item').style.visibility = 'hidden';
+
                 if (currentFirstTryCorrect) score += 10;
                 document.getElementById('score').innerText = score;
 
@@ -560,10 +636,8 @@
                 });
                 updateTrackerUI();
 
-                document.getElementById('draggable-item').style.visibility = 'hidden';
-                
                 currentTrialIndex++;
-                setTimeout(loadTrial, 800);
+                setTimeout(loadTrial, 500);
 
             } else {
                 playSound('incorrect');
@@ -619,7 +693,71 @@
                     origin: { y: 0.6 }
                 });
             }
-            alert(`🎉 恭喜完成遊戲！你的最終得分是 ${score} 分！`);
+
+            renderSummaryPage();
+            document.getElementById('summary-modal').classList.remove('hidden');
+        }
+
+        /* Render Summary Page as Picture Gallery */
+        function renderSummaryPage() {
+            document.getElementById('summary-score-text').innerText = `最終得分 (Final Score): ${score} 分`;
+            const container = document.getElementById('summary-categories-container');
+            container.innerHTML = '';
+
+            selectedCategories.forEach(catName => {
+                const catGroup = document.createElement('div');
+                catGroup.className = 'summary-category-group';
+
+                const catTitle = document.createElement('div');
+                catTitle.className = 'summary-cat-title';
+                catTitle.innerHTML = `
+                    <img src="${categoryBoxImages[catName] || 'cat_others.png'}" alt="${catName}">
+                    <span>${catName} (${categoriesData[catName].length} 個物品)</span>
+                `;
+                catGroup.appendChild(catTitle);
+
+                const itemsGrid = document.createElement('div');
+                itemsGrid.className = 'summary-items-grid';
+
+                // Display all 8 items as pictures under the category
+                categoriesData[catName].forEach(item => {
+                    const playedData = trackerData.find(d => d.img === item.img);
+
+                    let statusClass = 'status-unseen';
+                    let statusText = '未出現';
+
+                    if (playedData) {
+                        if (playedData.result === '正確 (Correct)') {
+                            statusClass = 'status-perfect';
+                            statusText = '✓ 正確';
+                        } else {
+                            statusClass = 'status-retry';
+                            statusText = '↻ 重試正確';
+                        }
+                    }
+
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'summary-item-card';
+                    itemCard.innerHTML = `
+                        <img src="${item.img}" alt="${item.name}">
+                        <span class="summary-item-status ${statusClass}">${statusText}</span>
+                    `;
+                    itemsGrid.appendChild(itemCard);
+                });
+
+                catGroup.appendChild(itemsGrid);
+                container.appendChild(catGroup);
+            });
+        }
+
+        function restartGame() {
+            document.getElementById('summary-modal').classList.add('hidden');
+            document.getElementById('game-area').classList.add('hidden');
+            document.getElementById('tracker-panel').classList.add('hidden');
+            document.getElementById('start-modal').classList.remove('hidden');
+            
+            selectedCategories = [];
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('selected'));
         }
 
         function exportTrackerImage() {
