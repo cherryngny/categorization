@@ -158,6 +158,7 @@
             cursor: grab;
             z-index: 10;
             touch-action: none;
+            visibility: hidden; /* Default hidden to prevent flash of old item */
         }
 
         #draggable-item img {
@@ -539,7 +540,7 @@
 
                 const catImg = document.createElement('img');
                 catImg.className = 'box-cat-img';
-                catImg.src = categoryBoxImages[catName] || 'cat_others.png';
+                catImg.src = categoryBoxImages[catName] || 'category.png';
                 catImg.alt = catName;
 
                 const label = document.createElement('span');
@@ -608,9 +609,12 @@
             const dragItem = document.getElementById('draggable-item');
             const imgEl = document.getElementById('item-img');
             
-            // Fix: Update image source BEFORE revealing item card
+            // Keep container hidden while swapping src to eliminate visual flash
+            dragItem.style.visibility = 'hidden';
             imgEl.src = currentItem.img;
             dragItem.style.transform = 'none';
+
+            // Reveal item card safely
             dragItem.style.visibility = 'visible';
         }
 
@@ -622,8 +626,11 @@
                 playSound('correct');
                 showFeedback('✓', 'correct', boxElement);
                 
-                // Fix: Hide draggable item IMMEDIATELY upon drop
-                document.getElementById('draggable-item').style.visibility = 'hidden';
+                // Instantly hide container AND purge old image src
+                const dragItem = document.getElementById('draggable-item');
+                const imgEl = document.getElementById('item-img');
+                dragItem.style.visibility = 'hidden';
+                imgEl.src = '';
 
                 if (currentFirstTryCorrect) score += 10;
                 document.getElementById('score').innerText = score;
@@ -711,7 +718,7 @@
                 const catTitle = document.createElement('div');
                 catTitle.className = 'summary-cat-title';
                 catTitle.innerHTML = `
-                    <img src="${categoryBoxImages[catName] || 'cat_others.png'}" alt="${catName}">
+                    <img src="${categoryBoxImages[catName] || 'category.png'}" alt="${catName}">
                     <span>${catName} (${categoriesData[catName].length} 個物品)</span>
                 `;
                 catGroup.appendChild(catTitle);
@@ -719,7 +726,6 @@
                 const itemsGrid = document.createElement('div');
                 itemsGrid.className = 'summary-items-grid';
 
-                // Display all 8 items as pictures under the category
                 categoriesData[catName].forEach(item => {
                     const playedData = trackerData.find(d => d.img === item.img);
 
