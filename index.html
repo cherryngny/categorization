@@ -171,7 +171,7 @@
         /* Category Boxes Container */
         #boxes-container {
             display: flex;
-            justify-style: space-around;
+            justify-content: space-around;
             width: 100%;
             gap: 15px;
         }
@@ -196,10 +196,9 @@
         }
 
         .box-cat-img {
-            width: 55px;
-            height: 55px;
+            width: 80px;
+            height: 80px;
             object-fit: contain;
-            margin-bottom: 6px;
             pointer-events: none;
         }
 
@@ -245,12 +244,13 @@
             margin-bottom: 12px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
 
         .summary-cat-title img {
-            width: 32px;
-            height: 32px;
+            width: 50px;
+            height: 50px;
             object-fit: contain;
         }
 
@@ -543,11 +543,8 @@
                 catImg.src = categoryBoxImages[catName] || 'category.png';
                 catImg.alt = catName;
 
-                const label = document.createElement('span');
-                label.innerText = catName;
-
+                // Only append image, omit text label to avoid providing hints
                 box.appendChild(catImg);
-                box.appendChild(label);
 
                 box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('drag-over'); });
                 box.addEventListener('dragleave', () => box.classList.remove('drag-over'));
@@ -572,7 +569,7 @@
                 });
             });
 
-            // If '動物' is chosen as a target, filter out ambiguous '23.png' across the entire trial generation
+            // If '動物' is chosen as a target, filter out ambiguous '23.png' across all pools
             const hasAnimalsSelected = selectedCategories.includes('動物');
 
             if (selectedCategories.length === 1) {
@@ -720,7 +717,7 @@
             document.getElementById('summary-modal').classList.remove('hidden');
         }
 
-        /* Render Summary Page as Picture Gallery */
+        /* Render Summary Page without written category names */
         function renderSummaryPage() {
             document.getElementById('summary-score-text').innerText = `最終得分 (Final Score): ${score} 分`;
             const container = document.getElementById('summary-categories-container');
@@ -732,9 +729,9 @@
 
                 const catTitle = document.createElement('div');
                 catTitle.className = 'summary-cat-title';
+                // Only show category image, no text label
                 catTitle.innerHTML = `
-                    <img src="${categoryBoxImages[catName] || 'category.png'}" alt="${catName}">
-                    <span>${catName} (${categoriesData[catName].length} 個物品)</span>
+                    <img src="${categoryBoxImages[catName] || 'category.png'}" alt="Category Header">
                 `;
                 catGroup.appendChild(catTitle);
 
