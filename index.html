@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>物品分類大冒險 Categorization Game</title>
     <!-- html2canvas for exporting report as image -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -22,14 +22,21 @@
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 15px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
             user-select: none;
+            touch-action: manipulation;
+            box-sizing: border-box;
         }
 
-        h1 { color: var(--primary); margin: 5px 0 15px 0; }
+        h1 { 
+            color: var(--primary); 
+            margin: 5px 0 10px 0; 
+            font-size: 1.5rem;
+            text-align: center;
+        }
 
         /* Modals & Setup */
         .modal {
@@ -42,32 +49,37 @@
 
         .modal-content {
             background: white;
-            padding: 25px;
+            padding: 20px 15px;
             border-radius: 20px;
             max-width: 650px;
-            width: 90%;
+            width: 92%;
             max-height: 85vh;
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             text-align: center;
+            box-sizing: border-box;
         }
 
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
             gap: 8px;
             margin: 15px 0;
         }
 
         .cat-btn {
-            padding: 10px 5px;
+            padding: 12px 4px;
             background: #F1F5F9;
             border: 2px solid #CBD5E1;
             border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.95rem;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
         }
 
         .cat-btn.selected {
@@ -80,13 +92,14 @@
             background: var(--secondary);
             color: white;
             border: none;
-            padding: 12px 30px;
-            font-size: 1.2rem;
+            padding: 12px 24px;
+            font-size: 1.1rem;
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
             margin-top: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            touch-action: manipulation;
         }
 
         .btn:hover { background: #27AE60; }
@@ -94,21 +107,21 @@
         /* Game UI Layout */
         #game-area {
             width: 100%;
-            max-width: 700px;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
         #status-bar {
             width: 100%;
             display: flex;
             justify-content: space-between;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             background: white;
-            padding: 10px 20px;
+            padding: 8px 15px;
             border-radius: 12px;
             box-sizing: border-box;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -118,7 +131,7 @@
         #conveyor-belt-container {
             position: relative;
             width: 100%;
-            height: 180px;
+            height: 150px;
             background: #94A3B8;
             border-radius: 15px;
             border: 4px solid #475569;
@@ -133,7 +146,7 @@
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 30px;
+            height: 25px;
             background: repeating-linear-gradient(90deg, #334155 0, #334155 20px, #1E293B 20px, #1E293B 40px);
             animation: moveBelt 2s linear infinite;
         }
@@ -145,9 +158,9 @@
 
         /* Draggable Object */
         #draggable-item {
-            position: relative;
-            width: 100px;
-            height: 100px;
+            position: absolute;
+            width: 85px;
+            height: 85px;
             background: white;
             border-radius: 15px;
             border: 3px solid var(--primary);
@@ -158,7 +171,7 @@
             cursor: grab;
             z-index: 10;
             touch-action: none;
-            visibility: hidden; /* Default hidden to prevent flash of old item */
+            visibility: hidden;
         }
 
         #draggable-item img {
@@ -173,12 +186,12 @@
             display: flex;
             justify-content: space-around;
             width: 100%;
-            gap: 15px;
+            gap: 10px;
         }
 
         .box {
             flex: 1;
-            height: 150px;
+            height: 110px;
             background: white;
             border: 3px dashed var(--primary);
             border-radius: 15px;
@@ -186,18 +199,15 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--primary);
             transition: all 0.2s;
             position: relative;
-            padding: 8px;
+            padding: 5px;
             box-sizing: border-box;
         }
 
         .box-cat-img {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             object-fit: contain;
             pointer-events: none;
         }
@@ -211,7 +221,7 @@
         /* Feedback Overlay */
         .feedback-pop {
             position: absolute;
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: bold;
             pointer-events: none;
             animation: popFade 0.8s forwards;
@@ -232,38 +242,34 @@
             background: #F8FAFC;
             border: 2px solid #E2E8F0;
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 10px;
+            margin-bottom: 12px;
             text-align: left;
         }
 
         .summary-cat-title {
-            font-size: 1.2rem;
-            color: var(--primary);
-            font-weight: bold;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
         }
 
         .summary-cat-title img {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             object-fit: contain;
         }
 
         .summary-items-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+            gap: 8px;
         }
 
         .summary-item-card {
             background: white;
-            border-radius: 10px;
-            padding: 8px;
+            border-radius: 8px;
+            padding: 6px 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -272,17 +278,17 @@
         }
 
         .summary-item-card img {
-            width: 55px;
-            height: 55px;
+            width: 45px;
+            height: 45px;
             object-fit: contain;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .summary-item-status {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: bold;
-            padding: 2px 6px;
-            border-radius: 6px;
+            padding: 2px 4px;
+            border-radius: 4px;
             text-align: center;
             width: 100%;
             box-sizing: border-box;
@@ -295,12 +301,12 @@
         /* Data Tracker Panel */
         #tracker-panel {
             width: 100%;
-            max-width: 700px;
+            max-width: 600px;
             background: white;
             border-radius: 15px;
-            padding: 15px 20px;
+            padding: 12px 15px;
             box-sizing: border-box;
-            margin-top: 20px;
+            margin-top: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             border: 2px solid #CBD5E1;
         }
@@ -310,15 +316,19 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #E2E8F0;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tracker-header h3 {
+            font-size: 1.05rem;
         }
 
         .tracker-list {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            max-height: 200px;
+            max-height: 160px;
             overflow-y: auto;
         }
 
@@ -326,14 +336,14 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 6px 12px;
+            padding: 6px 10px;
             background: #F8FAFC;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
-        .tracker-info { display: flex; align-items: center; gap: 10px; }
-        .tracker-thumb { width: 30px; height: 30px; object-fit: contain; }
+        .tracker-info { display: flex; align-items: center; gap: 8px; }
+        .tracker-thumb { width: 26px; height: 26px; object-fit: contain; }
 
         .hidden { display: none !important; }
     </style>
@@ -345,8 +355,8 @@
     <!-- Pre-selection Modal -->
     <div id="start-modal" class="modal">
         <div class="modal-content">
-            <h2>選擇目標類別</h2>
-            <p>請選擇 1 至 3 個類別進行遊戲：</p>
+            <h2 style="font-size: 1.3rem; margin-top: 0;">選擇目標類別</h2>
+            <p style="font-size: 0.9rem; color: #64748B;">請選擇 1 至 3 個類別進行遊戲：</p>
             <div class="category-grid" id="category-options"></div>
             <button class="btn" onclick="startGame()">開始遊戲 Start</button>
         </div>
@@ -355,8 +365,8 @@
     <!-- Picture Summary Modal -->
     <div id="summary-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 style="color: var(--primary); margin-top: 0;">🎉 本輪目標類別圖片總結</h2>
-            <p id="summary-score-text" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 15px;"></p>
+            <h2 style="color: var(--primary); margin-top: 0; font-size: 1.3rem;">🎉 本輪目標類別圖片總結</h2>
+            <p id="summary-score-text" style="font-size: 1rem; font-weight: bold; margin-bottom: 12px;"></p>
             
             <div id="summary-categories-container"></div>
 
@@ -385,10 +395,10 @@
     <div id="tracker-panel" class="hidden">
         <div class="tracker-header">
             <h3 style="margin: 0; color: var(--primary);">表現紀錄 (Data Tracker)</h3>
-            <button class="btn" style="padding: 5px 15px; font-size: 0.9rem;" onclick="exportTrackerImage()">📷 匯出紀錄圖片</button>
+            <button class="btn" style="padding: 4px 12px; font-size: 0.8rem; margin: 0;" onclick="exportTrackerImage()">📷 匯出紀錄</button>
         </div>
         <div class="tracker-list" id="tracker-list"></div>
-        <div id="summary-box" style="margin-top: 10px; font-weight: bold; text-align: right; color: var(--primary);">
+        <div id="summary-box" style="margin-top: 8px; font-size: 0.9rem; font-weight: bold; text-align: right; color: var(--primary);">
             首答正確率: 0%
         </div>
     </div>
@@ -543,7 +553,6 @@
                 catImg.src = categoryBoxImages[catName] || 'category.png';
                 catImg.alt = catName;
 
-                // Only append image, omit text label to avoid providing hints
                 box.appendChild(catImg);
 
                 box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('drag-over'); });
@@ -569,7 +578,6 @@
                 });
             });
 
-            // If '動物' is chosen as a target, filter out ambiguous '23.png' across all pools
             const hasAnimalsSelected = selectedCategories.includes('動物');
 
             if (selectedCategories.length === 1) {
@@ -621,12 +629,14 @@
             const dragItem = document.getElementById('draggable-item');
             const imgEl = document.getElementById('item-img');
             
-            // Keep container hidden while swapping src to eliminate visual flash
             dragItem.style.visibility = 'hidden';
             imgEl.src = currentItem.img;
+            
+            // Reset position centered
+            dragItem.style.left = '';
+            dragItem.style.top = '';
             dragItem.style.transform = 'none';
 
-            // Reveal item card safely
             dragItem.style.visibility = 'visible';
         }
 
@@ -638,7 +648,6 @@
                 playSound('correct');
                 showFeedback('✓', 'correct', boxElement);
                 
-                // Instantly hide container AND purge old image src
                 const dragItem = document.getElementById('draggable-item');
                 const imgEl = document.getElementById('item-img');
                 dragItem.style.visibility = 'hidden';
@@ -665,7 +674,11 @@
 
                 const dragItem = document.getElementById('draggable-item');
                 dragItem.style.transform = 'scale(1.1)';
-                setTimeout(() => dragItem.style.transform = 'none', 300);
+                setTimeout(() => {
+                    dragItem.style.transform = 'none';
+                    dragItem.style.left = '';
+                    dragItem.style.top = '';
+                }, 300);
             }
         }
 
@@ -701,7 +714,7 @@
             });
 
             const accuracy = trackerData.length ? Math.round((correctFirstTryCount / trackerData.length) * 100) : 0;
-            document.getElementById('summary-box').innerText = `首答正確率 (First-try Accuracy): ${accuracy}%`;
+            document.getElementById('summary-box').innerText = `首答正確率: ${accuracy}%`;
         }
 
         function endGame() {
@@ -717,7 +730,6 @@
             document.getElementById('summary-modal').classList.remove('hidden');
         }
 
-        /* Render Summary Page without written category names */
         function renderSummaryPage() {
             document.getElementById('summary-score-text').innerText = `最終得分 (Final Score): ${score} 分`;
             const container = document.getElementById('summary-categories-container');
@@ -729,7 +741,6 @@
 
                 const catTitle = document.createElement('div');
                 catTitle.className = 'summary-cat-title';
-                // Only show category image, no text label
                 catTitle.innerHTML = `
                     <img src="${categoryBoxImages[catName] || 'category.png'}" alt="Category Header">
                 `;
@@ -786,6 +797,55 @@
                 link.href = canvas.toDataURL();
                 link.click();
             });
+        }
+
+        /* --- Touch Event Listeners for Mobile Touchscreen Drag-and-Drop --- */
+        const dragItem = document.getElementById('draggable-item');
+        let activeBox = null;
+
+        dragItem.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            dragItem.style.position = 'fixed';
+            updateTouchPosition(touch);
+        }, { passive: false });
+
+        dragItem.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            updateTouchPosition(touch);
+
+            // Check if touch pointer overlaps with any category box
+            dragItem.style.visibility = 'hidden'; // temporarily hide to elementFromPoint target underneath
+            const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            dragItem.style.visibility = 'visible';
+
+            const box = elemBelow ? elemBelow.closest('.box') : null;
+
+            if (activeBox !== box) {
+                if (activeBox) activeBox.classList.remove('drag-over');
+                activeBox = box;
+                if (activeBox) activeBox.classList.add('drag-over');
+            }
+        }, { passive: false });
+
+        dragItem.addEventListener('touchend', (e) => {
+            if (activeBox) {
+                activeBox.classList.remove('drag-over');
+                const targetCategory = activeBox.dataset.category;
+                handleDrop(targetCategory, activeBox);
+                activeBox = null;
+            } else {
+                // Reset item positioning if dropped in open space
+                dragItem.style.position = 'relative';
+                dragItem.style.left = '';
+                dragItem.style.top = '';
+            }
+        });
+
+        function updateTouchPosition(touch) {
+            dragItem.style.left = (touch.clientX - dragItem.offsetWidth / 2) + 'px';
+            dragItem.style.top = (touch.clientY - dragItem.offsetHeight / 2) + 'px';
         }
     </script>
 </body>
